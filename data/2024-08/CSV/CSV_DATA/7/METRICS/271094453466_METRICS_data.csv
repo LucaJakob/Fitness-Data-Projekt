@@ -1,0 +1,6 @@
+file_id.serial_number,file_id.time_created,file_id.manufacturer,file_id.garmin_product,file_id.number,file_id.type,file_creator.unknown,file_creator.software_version,device_info.timestamp[s],device_info.serial_number,device_info.product,device_info.software_version,unknown.unknown,
+"3478404119","1092002302","1","4394","171","44",,,,
+"3478404119","1092002302","1","4394","171","44","1","1610",,
+"3478404119","1092002302","1","4394","171","44","1","1610","1092002302","3478404119","4394","16.1",
+"3478404119","1092002302","1","4394","171","44","1","1610","1092002302","3478404119","4394","16.1","0",
+"3478404119","1092002302","1","4394","171","44","1","1610","1092002302","3478404119","4394","16.1","0",

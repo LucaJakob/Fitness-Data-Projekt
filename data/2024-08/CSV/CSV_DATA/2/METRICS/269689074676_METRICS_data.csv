@@ -1,0 +1,6 @@
+file_id.serial_number,file_id.time_created,file_id.manufacturer,file_id.garmin_product,file_id.number,file_id.type,file_creator.unknown,file_creator.software_version,device_info.timestamp[s],device_info.serial_number,device_info.product,device_info.software_version,unknown.unknown,max_met_data.update_time,max_met_data.unknown,max_met_data.vo2_max[mL/kg/min],max_met_data.max_met_category,max_met_data.calibrated_data,
+"3478404119","1091523790","1","4394","149","44",,,
+"3478404119","1091523790","1","4394","149","44","1","1610",
+"3478404119","1091523790","1","4394","149","44","1","1610","1091523789","3478404119","4394","16.1",
+"3478404119","1091523790","1","4394","149","44","1","1610","1091523789","3478404119","4394","16.1","0",
+"3478404119","1091523790","1","4394","149","44","1","1610","1091523789","3478404119","4394","16.1","0","1091523789","375","39.0","0","0",
