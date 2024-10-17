@@ -3,8 +3,8 @@ import pandas as pd
 import glob
 
 
-def FileMerger_Days():
-
+def file_merger_days():
+    
     folder = 1
 
     for i in range(0,31):
@@ -26,4 +26,4 @@ def FileMerger_Days():
 
 
 
-FileMerger_Days()
+file_merger_days()
