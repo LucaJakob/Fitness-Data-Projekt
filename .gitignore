@@ -1,2 +1,5 @@
 # File from Zip Converter
 **/*.ini
+
+# Generated with code
+data/merged/**.*
