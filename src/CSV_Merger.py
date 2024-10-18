@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import glob
 from pathlib import Path

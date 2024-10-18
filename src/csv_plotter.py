@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path 
-from CSV_Merger import file_merger_days
+from csv_merger import file_merger_days
 
 if __name__ == '__main__':
     VIEW_CSV = '1.csv'
