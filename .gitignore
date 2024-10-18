@@ -3,3 +3,6 @@
 
 # Generated with code
 data/merged/**.*
+
+# pandas plotter cache
+src/__pycache__

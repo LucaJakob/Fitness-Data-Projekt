@@ -24,5 +24,5 @@ def file_merger_days():
         df_clean.to_csv(rf'{output_dir}/{i}.csv',sep=',')
 
 
-
-file_merger_days()
+if __name__ == '__main__':
+    file_merger_days()
