@@ -1,22 +1,33 @@
+from itertools import chain
+
 class _IterableAttributes:
-    def __iter__(self):
-        return iter([
+    def __get_attributes(self):
+        return [
             getattr(self, k) for k in dir(self) 
             if not k.startswith('_') # filter out hidden props
             and not callable(getattr(self, k)) # no methods
             and type(getattr(self, k)) is not staticmethod # no statics
-        ])
+        ]
+
+    def __iter__(self):
+        return iter(self.__get_attributes())
+
+    def __len__(self):
+        return len(self.__get_attributes())
     
 # Represents any columns labeled as unknown or unnamed
 class _Invalid(_IterableAttributes):
     unnamed_0 = 'Unnamed: 0'
+    unnamed_33 = 'Unnamed: 33'
     unnamed_51 = 'Unnamed: 51'
     unnamed_55 = 'Unnamed: 55'
     unnamed_53 = 'Unnamed: 53'
+    empty = ''
     unknown = 'unknown.unknown'
     monitoring_info_unknown = 'monitoring_info.unknown'
     monitoring_unknown = 'monitoring.unknown'
     stress_level_unknown = 'stress_level.unknown'
+    sleep_assessment_unknown = 'sleep_assessment.unknown'
 
 class _FileId(_IterableAttributes):
     serial_number = 'file_id.serial_number'
@@ -32,9 +43,11 @@ class _DeviceInfo(_IterableAttributes):
     manufacturer = 'device_info.manufacturer'
     garmin_product = 'device_info.garmin_product'
     software_version = 'device_info.software_version'
+	
 
 class _Software(_IterableAttributes):
     version = 'software.version'
+    file_creator_version = 'file_creator.software_version'
 
 class _MonitoringInfo(_IterableAttributes):
     timestamp_s = 'monitoring_info.timestamp[s]'
@@ -103,3 +116,45 @@ class WellnessColumns:
     stress_level = _StressLevel()
     respiration_rate = _RespirationRate()
     monitoring_hr_data = _MonitoringHRData()
+
+class _SleepAssessment:
+    timestamp_s = 'sleep_level.timestamp[s]'
+    sleep_level = 'sleep_level.sleep_level'
+    average_stress = 'sleep_assessment.average_stress_during_sleep'
+    combined_awake_score = 'sleep_assessment.combined_awake_score'
+    awake_time = 'sleep_assessment.awake_time_score'
+    awakenings_count_score = 'sleep_assessment.awakenings_count_score'
+    deep_sleep_score = 'sleep_assessment.deep_sleep_score'
+    sleep_duration_score = 'sleep_assessment.sleep_duration_score'
+    light_sleep_score = 'sleep_assessment.light_sleep_score'
+    overall_sleep_score = 'sleep_assessment.overall_sleep_score'
+    sleep_quality_score = 'sleep_assessment.sleep_quality_score'
+    sleep_recovery_score = 'sleep_assessment.sleep_recovery_score'
+    rem_sleep_score = 'sleep_assessment.rem_sleep_score'
+    sleep_restlessness_score = 'sleep_assessment.sleep_restlessness_score'
+    awakenings_count = 'sleep_assessment.awakenings_count'
+    interruptions_score = 'sleep_assessment.interruptions_score'
+
+
+class SleepColumns:
+    invalid = _Invalid()
+    file_id = _FileId()
+    software = _Software()
+    device_info = _DeviceInfo()
+    assessment = _SleepAssessment()
+
+
+class StaticData(_IterableAttributes):
+    invalid = _Invalid()
+    file_id = _FileId()
+    software = _Software()
+    device_info = _DeviceInfo()
+
+    def __iter__(self):
+        return chain(self.invalid, self.file_id, self.software, self.device_info)
+    
+    def __len__(self):
+        output = 0
+        for i in self:
+            output += len(i)
+        return output
