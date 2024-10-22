@@ -1,11 +1,15 @@
 import pandas as pd
 import glob
 from pathlib import Path
+from csv_columns import WellnessColumns
 
 def file_merger_days():
     
     path = Path('./data/2024-08/CSV/CSV_DATA')
     output_dir = Path('./data/merged')
+
+    
+    output_dir.mkdir(exist_ok=True)
 
     for i in range(1,32):
         
@@ -19,7 +23,11 @@ def file_merger_days():
         for df_temp in all_df[1:]:
             df = pd.concat([df, df_temp], ignore_index=True, sort=False)
         #removing duplicate monitoring.timestamp[s] due to tracking error
-        df_clean = df.drop_duplicates(subset=['monitoring.timestamp[s]'])
+        df_clean = (
+            df
+            .drop_duplicates(subset=['monitoring.timestamp[s]'])
+            .drop(WellnessColumns.invalid, axis=1, errors='ignore')
+        )
         df_clean.to_csv(rf'{output_dir}/{i}.csv',sep=',')
 
 

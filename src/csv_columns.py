@@ -90,7 +90,7 @@ class _RespirationRate(_IterableAttributes):
     timestamp = 'respiration_rate.timestamp'
     breaths_per_minute = 'respiration_rate.respiration_rate[breaths/min]'
 
-class MergedColumns:
+class WellnessColumns:
     # Represents any columns labeled as unknown or unnamed
     invalid = _Invalid()
     file_id = _FileId()
