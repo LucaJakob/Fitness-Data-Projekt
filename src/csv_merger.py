@@ -61,8 +61,10 @@ A tuple containing two items:
 
     if len(drop_cols) > 0:
         for col in drop_cols:
+            # only count dropped columns if they actually exist
             try:
                 df = df.drop(col, axis=1, errors='raise')
+                # col may be a list-like
                 removed_cols += 1 if isinstance(col, str) else len(col)
             except KeyError:
                 continue
@@ -109,20 +111,22 @@ def file_merger_sleep(output_dir: Path):
         df.to_csv(rf'{output_sleep}/{i}.csv',sep=',')
         print(f"sleep\\{i}.csv\t", meta)
 
-def file_merger_total(input_dir: Path, group_by: str):
+def file_merger_total(input_dir: Path, group_by: list[str]):
     df, meta = merge_df(
             rf'{input_dir}/*.csv', 
-            drop_duplicate_cols=[group_by]
+            drop_duplicate_cols=group_by
         )
     df.to_csv(f'{input_dir}/all.csv', sep=',')
     print(f"{input_dir}/all.csv\t", meta)
 
 
 def generate_data(output_dir: Path):
+    print('\n----Wellness Data----')
     file_merger_wellness(output_dir)
+    print('\n----Sleep Data----')
     file_merger_sleep(output_dir)
-    file_merger_total(Path('./data/merged/sleep'), group_by=SleepColumns.assessment.timestamp_s)
-    file_merger_total(Path('./data/merged/wellness'), group_by=WellnessColumns.monitoring.timestamp_s)
+    file_merger_total(Path('./data/merged/sleep'), group_by=[SleepColumns.assessment.timestamp_s])
+    file_merger_total(Path('./data/merged/wellness'), group_by=[WellnessColumns.monitoring.timestamp_s])
 
 if __name__ == '__main__':
     merged_path = Path('./data/merged')
