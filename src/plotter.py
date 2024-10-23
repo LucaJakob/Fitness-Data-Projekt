@@ -22,15 +22,23 @@ class Figure:
         self.__prepare_data()
 
     def __prepare_data(self):
-        self.df_sleep = pd.read_csv(self._sleep_path)
-        self.df_sleep.rename(columns={
-            SleepColumns.assessment.timestamp_s: 'timestamp'
-        }, inplace=True)
+        self.df = self.__fetch_wellness(self._wellness_path)
+        graph_window = (self.df['timestamp'].min(), self.df['timestamp'].max())
 
-        graph_window = (
-            self.df_sleep['timestamp'].min() - self.SLEEP_LOOKBEHIND, 
-            self.df_sleep['timestamp'].max() + self.SLEEP_LOOKAHEAD
-        )
+        # Wellness data usually goes from the previous day at 21:00 - today at 21:00.
+        # If sleep data is present, focus around that instead
+        try:
+            self.df_sleep = pd.read_csv(self._sleep_path)
+            self.df_sleep.rename(columns={
+                SleepColumns.assessment.timestamp_s: 'timestamp'
+            }, inplace=True)
+
+            graph_window = (
+                self.df_sleep['timestamp'].min() - self.SLEEP_LOOKBEHIND, 
+                self.df_sleep['timestamp'].max() + self.SLEEP_LOOKAHEAD
+            )
+        except Exception:
+            self.df_sleep = pd.DataFrame()
 
         # Wellness data usually goes from the previous day at 21:00 - today at 21:00.
         self.df = self.__fetch_wellness(self._wellness_path)
@@ -64,6 +72,7 @@ class Figure:
         df = df[df['bpm'] != 0]
     
         return df
+
     def plot(self, ax: plt.Axes):
         self.df.plot(
         ax=ax,
@@ -111,5 +120,8 @@ class Plotter:
 
 
 if __name__ == '__main__':
-    Plotter()
+    # Even though this variable is unused, it prevents
+    # Python from garbage collecting our graph.
+    # Do not remove this assignment.
+    plotter = Plotter()
     plt.show()
