@@ -21,3 +21,12 @@ garmin_timestamp : int
     #   https://stackoverflow.com/questions/32799428/adding-years-in-python
     #   https://stackoverflow.com/questions/48796729/how-to-add-a-year-to-a-column-of-dates-in-pandas
     return d + pd.offsets.DateOffset(years=20)
+
+def format_title(day: int) -> str:
+    """
+Format the visual graph's title based on the provided day.
+Assumes that the CSV file is generated and named with the same integer.
+    """
+    title = "Aug 31 - Sep 01" if day == 31 else f"Aug {day} - Aug {day + 1}"
+    title += f" 2024 ({day}.csv)"
+    return title

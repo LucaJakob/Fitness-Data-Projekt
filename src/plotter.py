@@ -2,23 +2,23 @@ import pandas             as pd
 import matplotlib.pyplot  as plt
 import matplotlib.widgets as widgets
 
-from matplotlib.dates import DateFormatter
-from csv_columns      import SleepColumns, WellnessColumns
-from pathlib          import Path
-from utils            import to_datetime
+from matplotlib.ticker import AutoMinorLocator
+from matplotlib.dates  import DateFormatter, MinuteLocator
+from csv_columns       import SleepColumns, WellnessColumns
+from pathlib           import Path
+from utils             import to_datetime, format_title
 
 class Figure:
     def __init__(self, day: int):
-        self.SLEEP_LOOKAHEAD  = 60 * 60 * 5 # hours
-        self.SLEEP_LOOKBEHIND = 60 * 60 * 5 # hours
+        self.LOOKAHEAD  = 60 * 60 * 5 # hours
+        self.LOOKBEHIND = 60 * 60 * 5 # hours
         
         self.set_day(day)
     
-    def set_day(self, day: int):
-        self.day = day
-        self._sleep_path = Path(f"./data/merged/sleep/{day}.csv")
-        self._wellness_path = Path(f"./data/merged/wellness/{day}.csv")
-
+    def set_day(self, day: int | float):
+        self.day = int(day)
+        self._sleep_path = Path(f"./data/merged/sleep/{self.day}.csv")
+        self._wellness_path = Path(f"./data/merged/wellness/{self.day}.csv")
         self.__prepare_data()
 
     def __prepare_data(self):
@@ -34,8 +34,8 @@ class Figure:
             }, inplace=True)
 
             graph_window = (
-                self.df_sleep['timestamp'].min() - self.SLEEP_LOOKBEHIND, 
-                self.df_sleep['timestamp'].max() + self.SLEEP_LOOKAHEAD
+                self.df_sleep['timestamp'].min() - self.LOOKBEHIND, 
+                self.df_sleep['timestamp'].max() + self.LOOKAHEAD
             )
         except Exception:
             self.df_sleep = pd.DataFrame()
@@ -76,7 +76,7 @@ class Figure:
     def plot(self, ax: plt.Axes):
         self.df.plot(
         ax=ax,
-        title=f"Steps / Bpm Data 2024 ({self.day}.csv)",
+        title=format_title(self.day),
         xlabel='Time',
         x='timestamp',
         label=['Heartbeat [bpm]', 'Δ Steps'],
@@ -85,19 +85,26 @@ class Figure:
 
         if not self.df_sleep.empty:
             sleep_timestamps = self.df_sleep['timestamp']
-        
             sleep_at = to_datetime(sleep_timestamps.min())
             wake_up_at = to_datetime(sleep_timestamps.max())
-            ax.axvspan(sleep_at, wake_up_at, color='blue', alpha=0.2, label='Sleep')
+            ax.axvspan(sleep_at, wake_up_at, color='blue', alpha=0.2, label='Sleep', mouseover=True)
+
         ax.legend(loc='upper center')
-        ax.xaxis.set_major_formatter(DateFormatter('%m-%d %H:%M'))
+        ax.xaxis.set_major_locator(MinuteLocator(byminute=[0, 30]))
+        # Keep major tick size for 30 minutes, but remove the text label
+        for label in ax.xaxis.get_ticklabels():
+            if ':30' in label.get_text():
+                label.set_visible(False)
+        ax.xaxis.set_major_formatter(DateFormatter('%I %p'))
+
+        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        ax.xaxis.set_tick_params(labelrotation=55)
 
 
 class Plotter:
     def __init__(self):
-        self.index = 2
         self.index_limit = (2, 31)
-        self.graph = Figure(self.index)
+        self.graph = Figure(2)
         fig, ax = plt.subplots()
         self.axes = ax
         self.fig = fig                                                   
@@ -114,19 +121,16 @@ class Plotter:
         self.graph.plot(ax)
     
     def on_slider_change(self, val):
-        # Slider is already clamped, so we need no
-        # index checks
-        self.index = int(val)
         self.axes.clear()
-        self.graph.set_day(self.index)
+        self.graph.set_day(val)
         self.graph.plot(self.axes)
-        self.fig.canvas.draw()
+        self.fig.canvas.draw_idle()
     
     def on_key_press(self, event):
         # Slider.set_val() triggers the Slider.on_change event.
-        if event.key == 'right' and self.index != self.index_limit[1]:
+        if event.key == 'right' and self.slider.val != self.index_limit[1]:
             self.slider.set_val(self.slider.val + 1)
-        elif event.key == 'left' and self.index != self.index_limit[0]:
+        elif event.key == 'left' and self.slider.val != self.index_limit[0]:
             self.slider.set_val(self.slider.val - 1)
 
 
