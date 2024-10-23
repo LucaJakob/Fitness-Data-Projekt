@@ -1,11 +1,11 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas             as pd
+import matplotlib.pyplot  as plt
 import matplotlib.widgets as widgets
 
 from matplotlib.dates import DateFormatter
-from csv_columns import SleepColumns, WellnessColumns
-from pathlib import Path
-from utils import to_datetime
+from csv_columns      import SleepColumns, WellnessColumns
+from pathlib          import Path
+from utils            import to_datetime
 
 class Figure:
     def __init__(self, day: int):
@@ -92,13 +92,15 @@ class Figure:
         ax.legend(loc='upper center')
         ax.xaxis.set_major_formatter(DateFormatter('%m-%d %H:%M'))
 
+
 class Plotter:
     def __init__(self):
         self.index = 2
         self.index_limit = (2, 31)
-        self.current_figure = Figure(self.index)
+        self.graph = Figure(self.index)
         fig, ax = plt.subplots()
-        self.axes = ax                                                   
+        self.axes = ax
+        self.fig = fig                                                   
         fig.subplots_adjust(top=0.9)
         axis_day = fig.add_axes([0.1, 0.95, 0.8, 0.03])
 
@@ -107,16 +109,26 @@ class Plotter:
             2, 31, valinit=2, valstep=1.0, 
             initcolor='none'
         )
-        self.slider.on_changed(self.on_slider)
-        self.current_figure.plot(ax)
+        self.slider.on_changed(self.on_slider_change)
+        fig.canvas.mpl_connect('key_press_event', self.on_key_press)
+        self.graph.plot(ax)
     
-    def on_slider(self, val):
+    def on_slider_change(self, val):
         # Slider is already clamped, so we need no
         # index checks
-        self.axes.clear()
         self.index = int(val)
-        self.current_figure.set_day(self.index)
-        self.current_figure.plot(self.axes)
+        self.axes.clear()
+        self.graph.set_day(self.index)
+        self.graph.plot(self.axes)
+        self.fig.canvas.draw()
+    
+    def on_key_press(self, event):
+        # Slider.set_val() triggers the Slider.on_change event.
+        if event.key == 'right' and self.index != self.index_limit[1]:
+            self.slider.set_val(self.slider.val + 1)
+        elif event.key == 'left' and self.index != self.index_limit[0]:
+            self.slider.set_val(self.slider.val - 1)
+
 
 
 if __name__ == '__main__':
