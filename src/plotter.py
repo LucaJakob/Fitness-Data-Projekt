@@ -1,6 +1,7 @@
 import pandas             as pd
 import matplotlib.pyplot  as plt
 import matplotlib.widgets as widgets
+import datetime
 
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.dates  import DateFormatter, MinuteLocator
@@ -75,30 +76,39 @@ class Figure:
 
     def plot(self, ax: plt.Axes):
         self.df.plot(
-        ax=ax,
-        title=format_title(self.day),
-        xlabel='Time',
-        x='timestamp',
-        label=['Heartbeat [bpm]', 'Δ Steps'],
-        y=    ['bpm',             'steps'  ]
+            ax=ax,
+            title=format_title(self.day),
+            xlabel='Time',
+            x='timestamp',
+            label=['Heartbeat [bpm]', 'Δ Steps'],
+            y=    ['bpm',             'steps'  ]
         )
 
+        # Mark sleep span
         if not self.df_sleep.empty:
             sleep_timestamps = self.df_sleep['timestamp']
             sleep_at = to_datetime(sleep_timestamps.min())
             wake_up_at = to_datetime(sleep_timestamps.max())
             ax.axvspan(sleep_at, wake_up_at, color='blue', alpha=0.2, label='Sleep', mouseover=True)
+        
+        # Add dotted line at midnight
+        date = self.df['timestamp'].max()
+        midnight_val = datetime.datetime(date.year, date.month, date.day)
+        ax.axvline(midnight_val, color='black', linestyle='--')
 
         ax.legend(loc='upper center')
+
+        # Label every hour
+        # Big tick every 30 minutes
+        # Small tick every 15 minutes
         ax.xaxis.set_major_locator(MinuteLocator(byminute=[0, 30]))
-        # Keep major tick size for 30 minutes, but remove the text label
         for label in ax.xaxis.get_ticklabels():
             if ':30' in label.get_text():
                 label.set_visible(False)
         ax.xaxis.set_major_formatter(DateFormatter('%I %p'))
-
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.xaxis.set_tick_params(labelrotation=55)
+
 
 
 class Plotter:
