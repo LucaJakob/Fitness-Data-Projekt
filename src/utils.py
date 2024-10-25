@@ -1,6 +1,5 @@
 import pandas as pd
 from pathlib import Path
-from csv_columns import WellnessColumns
 import datetime
 
 def to_datetime(garmin_timestamp: int) -> pd.Timestamp:

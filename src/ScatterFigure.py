@@ -1,10 +1,8 @@
 import pandas as pd
-from csv_columns import WellnessColumns, SleepColumns
 from pathlib import Path
 import datetime
 from utils import read_wellness_csv
 import matplotlib.pyplot as plt
-import numpy as np
 import matplotlib.widgets as widgets
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.dates  import DateFormatter, MinuteLocator
