@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from csv_columns import WellnessColumns
+import datetime
 
 def to_datetime(garmin_timestamp: int) -> pd.Timestamp:
     """
@@ -52,3 +53,27 @@ path : pathlib.Path | str
     df['timestamp'] = df['timestamp'].map(to_datetime)
     
     return df
+
+def read_sleep_csv() -> pd.DataFrame:
+    sleep_df = pd.read_csv('data/2024-08/CSV/SLEEP/sleep_data.csv')
+
+
+
+    def apply_func(row):
+        if not isinstance(row['wake_time'], str):
+            return pd.NA
+        date_str = f"{row['date']} {row['wake_time']}"
+        return datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M %p")
+
+    sleep_df['wake_time'] = sleep_df.apply(apply_func, axis=1)
+
+    sleep_df['duration'] = sleep_df.apply(
+        lambda row: pd.to_timedelta(row['duration']),
+        axis=1
+    )
+
+    sleep_df['bedtime'] = sleep_df.apply(
+        lambda row: row['wake_time'] - row['duration'],
+        axis=1
+    )
+    return sleep_df

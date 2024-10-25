@@ -5,61 +5,62 @@ import datetime
 
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.dates  import DateFormatter, MinuteLocator
-from csv_columns       import SleepColumns
 from pathlib           import Path
-from utils             import to_datetime, format_title
+from utils             import to_datetime, format_title, read_sleep_csv
 
-class Figure:
+class GraphFigure:
     def __init__(self, day: int):
-        self.LOOKAHEAD  = 60 * 60 * 5 # hours
-        self.LOOKBEHIND = 60 * 60 * 5 # hours
+        self.LOOKAHEAD  = pd.offsets.Hour(5)
+        self.LOOKBEHIND = pd.offsets.Hour(5)
         
+        self.df_sleep = read_sleep_csv()
+
         self.set_day(day)
     
     def set_day(self, day: int | float):
         self.day = int(day)
-        self._sleep_path = Path(f"./data/merged/sleep/{self.day}.csv")
         self._wellness_path = Path(f"./data/merged/wellness/{self.day}.csv")
         self.__prepare_data()
 
     def __prepare_data(self):
         self.df = self.__fetch_wellness(self._wellness_path)
-        graph_window = (self.df['timestamp'].min(), self.df['timestamp'].max())
+
+        self.graph_window = (self.df['timestamp'].min(), self.df['timestamp'].max())
 
         # Wellness data usually goes from the previous day at 21:00 - today at 21:00.
-        # If sleep data is present, focus around that instead
-        try:
-            self.df_sleep = pd.read_csv(self._sleep_path)
-            self.df_sleep.rename(columns={
-                SleepColumns.assessment.timestamp_s: 'timestamp'
-            }, inplace=True)
+        # Find the first wake up time that is between those two dates
+        row_index = self.df_sleep.index[
+            (self.df_sleep['wake_time'] < self.graph_window[1]) & 
+            (self.df_sleep['wake_time'] > self.graph_window[0])
+        ]
 
-            graph_window = (
-                self.df_sleep['timestamp'].min() - self.LOOKBEHIND, 
-                self.df_sleep['timestamp'].max() + self.LOOKAHEAD
-            )
-        except Exception:
-            self.df_sleep = pd.DataFrame()
+        if row_index.empty:
+            self.sleep_time = None
+            self.wake_time = None
+        else:
+            self.sleep_time = pd.Timestamp(self.df_sleep.loc[row_index[0]]['bedtime'])
+            self.wake_time = pd.Timestamp(self.df_sleep.loc[row_index[0]]['wake_time'])
+            upper = self.wake_time + self.LOOKAHEAD
+            lower = self.sleep_time  - self.LOOKBEHIND
+            self.graph_window = (lower, upper)
 
         # Wellness data usually goes from the previous day at 21:00 - today at 21:00.
         self.df = self.__fetch_wellness(self._wellness_path)
 
         # Ensure data is within graph window and present
-        self.df: pd.DataFrame = self.df[self.df['timestamp'] <= graph_window[1]]
-        if self.df['timestamp'].min() > graph_window[0]:
+        self.df = self.df[self.df['timestamp'] <= self.graph_window[1]]
+        if self.df['timestamp'].min() > self.graph_window[0]:
             prev = self.day - 1
             df_previous = self.__fetch_wellness(self._wellness_path.parent / f"{prev}.csv")
-            df_previous = df_previous[df_previous['timestamp'] >= graph_window[0]]
+            df_previous = df_previous[df_previous['timestamp'] >= self.graph_window[0]]
         
             # append df_previous to df
             self.df = pd.concat([self.df, df_previous], ignore_index=True).sort_values('timestamp')
     
-        self.df['timestamp'] = self.df['timestamp'].map(to_datetime)
-
 
     def __fetch_wellness(self, path: str):
         df = pd.read_csv(path)
-    
+        df['timestamp'] = df['timestamp'].map(to_datetime)
         return df
 
     def plot(self, ax: plt.Axes):
@@ -73,12 +74,13 @@ class Figure:
         )
 
         # Mark sleep span
-        if not self.df_sleep.empty:
-            sleep_timestamps = self.df_sleep['timestamp']
-            sleep_at = to_datetime(sleep_timestamps.min())
-            wake_up_at = to_datetime(sleep_timestamps.max())
-            ax.axvspan(sleep_at, wake_up_at, color='blue', alpha=0.2, label='Sleep', mouseover=True)
-        
+        if self.sleep_time is not None and self.wake_time is not None:
+            ax.axvspan(
+                self.sleep_time, 
+                self.wake_time,
+                color='blue', alpha=0.2, label='Sleep'
+            )
+
         # Add dotted line at midnight
         date = self.df['timestamp'].max()
         midnight_val = datetime.datetime(date.year, date.month, date.day)
@@ -93,7 +95,7 @@ class Figure:
         for label in ax.xaxis.get_ticklabels():
             if ':30' in label.get_text():
                 label.set_visible(False)
-        ax.xaxis.set_major_formatter(DateFormatter('%I %p'))
+        ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d %I %p'))
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.xaxis.set_tick_params(labelrotation=55)
 
@@ -102,7 +104,7 @@ class Figure:
 class Plotter:
     def __init__(self):
         self.index_limit = (2, 31)
-        self.graph = Figure(2)
+        self.graph = GraphFigure(2)
         fig, ax = plt.subplots()
         self.axes = ax
         self.fig = fig                                                   
