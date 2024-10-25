@@ -1,4 +1,6 @@
 import pandas as pd
+from pathlib import Path
+from csv_columns import WellnessColumns
 
 def to_datetime(garmin_timestamp: int) -> pd.Timestamp:
     """
@@ -30,3 +32,23 @@ Assumes that the CSV file is generated and named with the same integer.
     title = "Aug 31 - Sep 01" if day == 31 else f"Aug {day} - Aug {day + 1}"
     title += f" 2024 ({day}.csv)"
     return title
+
+def read_wellness_csv(
+        path: Path | str
+    ) -> pd.DataFrame:
+    """
+Reads the wellness CSV file at the provided path,
+and formats the data to be more digestible.
+This adjusts the column types such as datetime ones.
+
+Parameters
+----------
+
+path : pathlib.Path | str
+    The path to use to read the CSV. Ensure the provided file is a wellness-like file.
+
+    """
+    df = pd.read_csv(path)
+    df['timestamp'] = df['timestamp'].map(to_datetime)
+    
+    return df

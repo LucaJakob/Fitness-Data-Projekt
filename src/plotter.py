@@ -5,7 +5,7 @@ import datetime
 
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.dates  import DateFormatter, MinuteLocator
-from csv_columns       import SleepColumns, WellnessColumns
+from csv_columns       import SleepColumns
 from pathlib           import Path
 from utils             import to_datetime, format_title
 
@@ -59,18 +59,6 @@ class Figure:
 
     def __fetch_wellness(self, path: str):
         df = pd.read_csv(path)
-        df.rename(columns={
-            WellnessColumns.monitoring.steps: 'steps',
-            WellnessColumns.monitoring.timestamp_s: 'timestamp',
-            WellnessColumns.monitoring.bpm: 'bpm'
-        }, inplace=True)
-
-        # Remove spikes of invalid steps data
-        # by forcing it to be monotonic ascending    
-        df['steps'] = df['steps'].cummax().diff()
-
-        # Remove invalid bpm monitoring data
-        df = df[df['bpm'] != 0]
     
         return df
 

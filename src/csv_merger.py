@@ -87,6 +87,19 @@ def file_merger_wellness(output_dir: Path):
         if df.empty:
             continue
 
+        df.rename(columns={
+            WellnessColumns.monitoring.steps: 'steps',
+            WellnessColumns.monitoring.timestamp_s: 'timestamp',
+            WellnessColumns.monitoring.bpm: 'bpm'
+        }, inplace=True)
+
+        # Remove spikes of invalid steps data
+        # by forcing it to be monotonic ascending    
+        df['steps'] = df['steps'].cummax().diff()
+
+        # Remove invalid bpm monitoring data
+        df = df[df['bpm'] != 0]
+
         df.to_csv(rf'{output_wellness}/{i}.csv',sep=',')
         print(f"wellness/{i}.csv\t", meta)
 
