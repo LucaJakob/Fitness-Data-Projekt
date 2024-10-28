@@ -56,13 +56,14 @@ path : pathlib.Path | str
 def read_sleep_csv() -> pd.DataFrame:
     sleep_df = pd.read_csv('data/2024-08/CSV/SLEEP/sleep_data.csv')
 
-
-
     def apply_func(row):
         if not isinstance(row['wake_time'], str):
             return pd.NA
         date_str = f"{row['date']} {row['wake_time']}"
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M %p")
+        # Sleep data timestamps are 3 hours ahead of steps data, MAYBE because of 12am-12am measurements
+        # instead of 9pm-9pm step measurements
+        # This data has been double checked using the garmin's interpreted data
+        return datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M %p") - pd.offsets.Hour(3)
 
     sleep_df['wake_time'] = sleep_df.apply(apply_func, axis=1)
 

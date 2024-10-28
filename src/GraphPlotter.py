@@ -1,12 +1,12 @@
-import pandas             as pd
-import matplotlib.pyplot  as plt
-import matplotlib.widgets as widgets
 import datetime
+import pandas as pd
+from pathlib import Path
+from utils   import to_datetime, format_title, read_sleep_csv
 
-from matplotlib.ticker import AutoMinorLocator
-from matplotlib.dates  import DateFormatter, MinuteLocator
-from pathlib           import Path
-from utils             import to_datetime, format_title, read_sleep_csv
+import matplotlib.pyplot   as plt
+import matplotlib.widgets  as widgets
+from   matplotlib.ticker   import AutoMinorLocator
+from   matplotlib.dates    import DateFormatter, MinuteLocator
 
 class GraphFigure:
     def __init__(self, day: int):
@@ -95,7 +95,7 @@ class GraphFigure:
         for label in ax.xaxis.get_ticklabels():
             if ':30' in label.get_text():
                 label.set_visible(False)
-        ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d %I %p'))
+        ax.xaxis.set_major_formatter(DateFormatter('%I %p'))
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.xaxis.set_tick_params(labelrotation=55)
 
