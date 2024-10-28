@@ -103,40 +103,20 @@ def file_merger_wellness(output_dir: Path):
         df.to_csv(rf'{output_wellness}/{i}.csv',sep=',')
         print(f"wellness/{i}.csv\t", meta)
 
-def file_merger_sleep(output_dir: Path):
-    
-    path = Path('./data/2024-08/CSV/CSV_DATA')
-    output_sleep = output_dir / 'sleep'
-
-    
-    output_sleep.mkdir(parents=True, exist_ok=True)
-
-    for i in range(1,32):
-        df, meta = merge_df(
-            rf'{path}/{i}/SLEEP/*.csv', 
-            drop_duplicate_cols=[SleepColumns.assessment.timestamp_s], 
-            drop_cols=StaticData()
-        )
-        
-        if df.empty:
-            continue
-
-        df.to_csv(rf'{output_sleep}/{i}.csv',sep=',')
-        print(f"sleep\\{i}.csv\t", meta)
-
-
-def generate_data(output_dir: Path):
-    print('\n----Wellness Data----')
-    file_merger_wellness(output_dir)
-    print('\n----Sleep Data----')
-    file_merger_sleep(output_dir)
-
-if __name__ == '__main__':
+def generate_data():
     merged_path = Path('./data/merged')
 
     print('Cleaning ./data/merged directory ...')
+    if not merged_path.exists():
+        merged_path.mkdir()
     shutil.rmtree(merged_path)
 
     print('Generating CSV data ...')
-    generate_data(merged_path)
+
+    print('\n----Wellness Data----')
+    file_merger_wellness(merged_path)
+    
     print('Merged CSV data created.')
+
+if __name__ == '__main__':
+    generate_data()

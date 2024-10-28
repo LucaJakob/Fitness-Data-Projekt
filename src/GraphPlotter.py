@@ -2,6 +2,7 @@ import datetime
 import pandas as pd
 from pathlib import Path
 from utils   import to_datetime, format_title, read_sleep_csv
+import csv_merger
 
 import matplotlib.pyplot   as plt
 import matplotlib.widgets  as widgets
@@ -136,6 +137,7 @@ class Plotter:
 
 
 if __name__ == '__main__':
+    csv_merger.generate_data()
     # Even though this variable is unused, it prevents
     # Python from garbage collecting our graph.
     # Do not remove this assignment.

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.dates  import DateFormatter, MinuteLocator
+import csv_merger
 
 class ScatterFigure:
     def __init__(self):
@@ -172,5 +173,9 @@ Creates a line graph Figure at the initial day.
 
 
 if __name__ == '__main__':
+    csv_merger.generate_data()
+    # Even though this variable seems unnecessary, it prevents
+    # Python from garbage collecting our graph.
+    # Do not remove this assignment.
     fig = ScatterFigure()
     fig.plot()
