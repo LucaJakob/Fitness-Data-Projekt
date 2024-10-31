@@ -1,5 +1,7 @@
-# Package manager
+# Local project settings
+poetry.toml
 .venv/**/*
+
 
 # File from Zip Converter
 **/*.ini
