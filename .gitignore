@@ -10,4 +10,4 @@ poetry.toml
 data/merged/**/*
 
 # pandas plotter cache
-src/__pycache__
+__pycache__

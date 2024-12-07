@@ -1,6 +1,16 @@
 import pandas as pd
-from pathlib import Path
+import glob
 import datetime
+from pathlib import Path
+
+def read_all_csv(regex_like_path: str) -> list[pd.DataFrame]:
+    """
+    Read all CSV based on the provided path expression.
+    Use * to mark any string.
+    Example: 'src/*.csv'
+    """
+    all_files = glob.glob(regex_like_path, recursive=True)
+    return [pd.read_csv(f) for f in all_files]
 
 def to_datetime(garmin_timestamp: int) -> pd.Timestamp:
     """
