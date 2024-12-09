@@ -1,7 +1,6 @@
 import pandas as pd
-import glob
 from datetime import date
-from utils import read_all_csv
+from utils import read_all_csv, to_datetime
 
 class SleepState:
   __loaded = False
@@ -19,8 +18,14 @@ Load sleep data to this class's mapper.
         continue
       SleepState.__parse_df(all_df, i)
 
+    for i in range(1, 32):
+      all_df = read_all_csv(f"data/2024-09/CSV/CSV_DATA/{i}/SLEEP/*.csv")
+      if len(all_df) == 0:
+        continue
+      SleepState.__parse_df(all_df, i)
+
     SleepState.__sort_map()
-    SleepState.loaded = True
+    SleepState.__loaded = True
   
   @staticmethod
   def __parse_df(df_list: list[pd.DataFrame], day: int):
@@ -32,8 +37,7 @@ Parse the provided list of dataframes and load them into the mapper.
 
     for df in df_list:
       # We only care about rows where both values are present
-      indeces = df[(df[col_level].isna()) | (df[col_time].isna())].index
-      df.drop(indeces)
+      df = df[(df[col_level].notna()) & (df[col_time].notna())]
 
       for _, row in df.iterrows():
           if SleepState.__map.get(row[col_time]) is not None:
@@ -42,9 +46,9 @@ Parse the provided list of dataframes and load them into the mapper.
               continue
             print("Duplicate timestamp detected")
 
-          val_limits = (date.today(), date(2000, 1, 1))
+          val_limits = (pd.Timestamp.today().timestamp(), pd.Timestamp(2000, 1, 1).timestamp())
           start, stop = SleepState.__limits.get(day, val_limits)
-          SleepState.__limits[day] = (min(start, val), max(stop, val))
+          SleepState.__limits[day] = (min(start, row[col_time])), max(stop, row[col_time])
 
           SleepState.__map[row[col_time]] = row[col_level]
 
@@ -73,21 +77,25 @@ Sort the internal map by key in ascending order.
     return False
 
   @staticmethod
-  def get(timestamp: int) -> None | int:
+  def get(timestamp: int) -> int:
     """
     Get the sleep level associated with the provided timestamp.
-    If the timestamp is not within a sleep window, None will be returned.
-    Otherwise, an integer between 1 and 4 representing the sleep states is returned.
+    An integer between 1 and 4 representing the sleep states is returned.
+
+    1: Awake
+    2: Light Sleep
+    3: Deep Sleep
+    4: REM
     """
     if not SleepState.__loaded:
       SleepState.__load()
     
     if not SleepState.is_during_sleep(timestamp):
-      return None
+      return 1
     
     for k in SleepState.__map.keys():
       if timestamp > k:
         continue
       return SleepState.__map[k]
-    return None # should be unreachable
-
+    return 1 # should be unreachable
+  

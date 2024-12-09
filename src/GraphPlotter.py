@@ -1,7 +1,7 @@
 import datetime
 import pandas as pd
 from pathlib import Path
-from utils   import to_datetime, format_title, read_sleep_csv
+from part2.utils   import to_datetime, format_title, read_sleep_csv
 import csv_merger
 
 import matplotlib.pyplot   as plt

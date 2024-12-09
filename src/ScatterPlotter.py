@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import datetime
-from utils import read_wellness_csv
+from part2.utils import read_wellness_csv
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
 from matplotlib.ticker import AutoMinorLocator
