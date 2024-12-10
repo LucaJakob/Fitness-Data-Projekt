@@ -1,101 +1,121 @@
 import pandas as pd
-from datetime import date
-from utils import read_all_csv, to_datetime
+from utils import read_all_csv
 
 class SleepState:
-  __loaded = False
-  __map: dict[int, int] = {}
-  __limits: dict[int, (int, int)] = {}
+    __loaded = False
+    __train_limits: dict[int, tuple[int, int]] = {}
+    __test_limits: dict[int, tuple[int, int]] = {}
+    __train_map: dict[int, int] = {}
+    __test_map: dict[int, int] = {}
 
-  @staticmethod
-  def __load():
-    """
-Load sleep data to this class's mapper.
-    """
-    for i in range(1, 32):
-      all_df = read_all_csv(f"data/2024-08/CSV/CSV_DATA/{i}/SLEEP/*.csv")
-      if len(all_df) == 0:
-        continue
-      SleepState.__parse_df(all_df, i)
+    @staticmethod
+    def __load(training_month="2024-08", testing_month="2024-09"):
+        """
+        Load sleep data for training and testing periods separately.
+        """
+        # Trainingsdaten laden
+        print("Lade Trainingsdaten...")
+        for day in range(1, 32):  # Tage im Trainingsmonat
+            all_df = read_all_csv(f"data/{training_month}/CSV/CSV_DATA/{day}/SLEEP/*.csv")
+            if len(all_df) == 0:
+                continue
+            SleepState.__parse_df(all_df, day, "train")
 
-    for i in range(1, 32):
-      all_df = read_all_csv(f"data/2024-09/CSV/CSV_DATA/{i}/SLEEP/*.csv")
-      if len(all_df) == 0:
-        continue
-      SleepState.__parse_df(all_df, i)
+        # Testdaten laden
+        print("Lade Testdaten...")
+        for day in range(1, 32):  # Tage im Testmonat
+            all_df = read_all_csv(f"data/{testing_month}/CSV/CSV_DATA/{day}/SLEEP/*.csv")
+            if len(all_df) == 0:
+                continue
+            SleepState.__parse_df(all_df, day, "test")
 
-    SleepState.__sort_map()
-    SleepState.__loaded = True
-  
-  @staticmethod
-  def __parse_df(df_list: list[pd.DataFrame], day: int):
-    """
-Parse the provided list of dataframes and load them into the mapper.
-    """
-    col_level = 'sleep_level.sleep_level'
-    col_time = 'sleep_level.timestamp[s]'
+        # Debugging: Anzeige der geladenen Daten
+        print("Trainingsdaten (Limits):")
+        for day, (start, stop) in SleepState.__train_limits.items():
+            readable_start = pd.to_datetime(start, unit='s').strftime('%Y-%m-%d %H:%M:%S')
+            readable_end = pd.to_datetime(stop, unit='s').strftime('%Y-%m-%d %H:%M:%S')
+            print(f"Tag {day}: Schlafbeginn = {readable_start}, Schlafende = {readable_end}")
 
-    for df in df_list:
-      # We only care about rows where both values are present
-      df = df[(df[col_level].notna()) & (df[col_time].notna())]
+        print("Testdaten (Limits):")
+        for day, (start, stop) in SleepState.__test_limits.items():
+            readable_start = pd.to_datetime(start, unit='s').strftime('%Y-%m-%d %H:%M:%S')
+            readable_end = pd.to_datetime(stop, unit='s').strftime('%Y-%m-%d %H:%M:%S')
+            print(f"Tag {day}: Schlafbeginn = {readable_start}, Schlafende = {readable_end}")
 
-      for _, row in df.iterrows():
-          if SleepState.__map.get(row[col_time]) is not None:
-            val = SleepState.__map[row[col_time]]
-            if row[col_level] == val:
-              continue
-            print("Duplicate timestamp detected")
+        SleepState.__loaded = True
 
-          val_limits = (pd.Timestamp.today().timestamp(), pd.Timestamp(2000, 1, 1).timestamp())
-          start, stop = SleepState.__limits.get(day, val_limits)
-          SleepState.__limits[day] = (min(start, row[col_time])), max(stop, row[col_time])
+    @staticmethod
+    def __parse_df(df_list: list[pd.DataFrame], day: int, mode: str):
+        """
+        Parse the provided list of dataframes and load them into the mapper.
+        Updates train or test limits and maps based on the mode.
+        """
+        col_level = 'sleep_level.sleep_level'
+        col_time = 'sleep_level.timestamp[s]'
 
-          SleepState.__map[row[col_time]] = row[col_level]
+        for df in df_list:
+            df = df[(df[col_level].notna()) & (df[col_time].notna())]
+            df = df.sort_values(by=col_time)
 
+            if not df.empty:
+                first_timestamp = df.iloc[0][col_time]
+                last_timestamp = df.iloc[-1][col_time]
 
-  @staticmethod
-  def __sort_map():
-    """
-Sort the internal map by key in ascending order.
-    """
-    SleepState.__map = { 
-      k: v for k, v in sorted(
-        SleepState.__map.items(), 
-        key = lambda p: p[0])
-    }
+                if mode == "train":
+                    SleepState.__train_limits[day] = (first_timestamp, last_timestamp)
+                elif mode == "test":
+                    SleepState.__test_limits[day] = (first_timestamp, last_timestamp)
 
-  @staticmethod
-  def is_during_sleep(timestamp: int) -> bool:
-    """
-    Determines whether or not a provided timestamp is within a sleep window.
-    """
-    # technically doable in a one-liner, but it's hard to read
-    for start, stop in SleepState.__limits.values():
-      if timestamp < start or timestamp > stop:
-        continue
-      return True
-    return False
+            for _, row in df.iterrows():
+                timestamp = row[col_time]
+                level = int(row[col_level])
 
-  @staticmethod
-  def get(timestamp: int) -> int:
-    """
-    Get the sleep level associated with the provided timestamp.
-    An integer between 1 and 4 representing the sleep states is returned.
+                if mode == "train":
+                    if SleepState.__train_map.get(timestamp) is None:
+                        SleepState.__train_map[timestamp] = level
+                elif mode == "test":
+                    if SleepState.__test_map.get(timestamp) is None:
+                        SleepState.__test_map[timestamp] = level
 
-    1: Awake
-    2: Light Sleep
-    3: Deep Sleep
-    4: REM
-    """
-    if not SleepState.__loaded:
-      SleepState.__load()
-    
-    if not SleepState.is_during_sleep(timestamp):
-      return 1
-    
-    for k in SleepState.__map.keys():
-      if timestamp > k:
-        continue
-      return SleepState.__map[k]
-    return 1 # should be unreachable
-  
+    @staticmethod
+    def get(timestamp: int, mode: str = "train") -> int:
+        """
+        Get the sleep level for the given timestamp based on the mode (train or test).
+        Returns:
+            1: Awake
+            2: Light Sleep
+            3: Deep Sleep
+            4: REM
+        """
+        if not SleepState.__loaded:
+            SleepState.__load()
+
+        limits = SleepState.__train_limits if mode == "train" else SleepState.__test_limits
+        sleep_map = SleepState.__train_map if mode == "train" else SleepState.__test_map
+
+        # Prüfen, ob der Zeitstempel innerhalb der Schlafgrenzen liegt
+        for day, (start, stop) in limits.items():
+            if start <= timestamp <= stop:
+                break
+        else:
+            return 1  # Wach
+
+        # Suche den letzten bekannten Schlaflevel
+        last_level = 1  # Standardwert: Wach
+        for ts, level in sorted(sleep_map.items()):
+            if ts > timestamp:
+                break
+            last_level = level
+
+        return last_level
+
+    @staticmethod
+    def is_during_sleep(timestamp: int, mode: str = "train") -> bool:
+        """
+        Determines whether a provided timestamp falls within a valid sleep period.
+        """
+        limits = SleepState.__train_limits if mode == "train" else SleepState.__test_limits
+        for start, stop in limits.values():
+            if start <= timestamp <= stop:
+                return True
+        return False
