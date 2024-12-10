@@ -312,8 +312,9 @@ for i, result in enumerate(results):
     tick_labels = [enum_labels[i] for i in range(1, 5)]
 
     # Heatmap erstellen
+    plt.suptitle('Confusion Matrix')
     sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=tick_labels, yticklabels=tick_labels, ax=ax)
-    plt.title(f"Confusion Matrix: {result['Model']}")
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
+    ax.set_title(result['Model'])
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("True Label")
 plt.show()
