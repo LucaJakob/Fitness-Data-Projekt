@@ -6,10 +6,7 @@ import sklearn.tree as sktree
 import sklearn.metrics as skmetrics
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
 import numpy as np
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neural_network import MLPClassifier
 
 def load_hrv(train_df: pd.DataFrame, test_df: pd.DataFrame, time_col: str):
     output = train_df
@@ -149,7 +146,7 @@ def plot_sleep_phases_one_day(df, sleep_level_col, day):
     plt.show()
 
 # Funktion zum Entfernen von Tages-Wachphasen
-def filter_daytime_wake_phases(df, sleep_level_col, wake_level=1, hour_threshold=1):
+def filter_daytime_wake_phases(df, sleep_level_col, wake_level=1, hour_threshold=1) -> pd.DataFrame:
     """
     Entfernt Wachphasen während des Tages basierend auf kontinuierlichen Phasen.
     Behandelt den Übergang am Morgen und Abend entsprechend den Bedingungen.
@@ -200,6 +197,14 @@ def filter_daytime_wake_phases(df, sleep_level_col, wake_level=1, hour_threshold
 
     return df
 
+def map_index(df: pd.DataFrame):
+    dates = pd.DatetimeIndex(df.index.values)
+    # see https://stackoverflow.com/questions/16453644/regression-with-date-variable-using-scikit-learn
+    df['day'] = dates.day
+    df['hour'] = dates.hour
+    df['minute'] = dates.minute
+    df['second'] = dates.second
+
 # enum:
 # Awake: 1
 # Light sleep: 2
@@ -224,7 +229,7 @@ if __name__ == "__main__":
     wake_count  = (df['sleep_level'] == 1).sum()
     sleep_count = (df['sleep_level'] == 2).sum()
 
-    plot_sleep_phases_one_day(test_df, sleep_level_col="sleep_level", day="2004-09-29")
+    # plot_sleep_phases_one_day(test_df, sleep_level_col="sleep_level", day="2004-09-29")
 
     print("Filtering daytime wake phases...")
     df = filter_daytime_wake_phases(df, sleep_level_col='sleep_level')
@@ -234,7 +239,8 @@ if __name__ == "__main__":
     #plot_sleep_phases_one_day(test_df, sleep_level_col="sleep_level", day="2004-09-29")
 
     # TODO: Figure out if timestamps should be variable in rows or index is fine
-    # df['time_posix'] = df.index 
+    map_index(df)
+    map_index(test_df)
     target_vals = df['sleep_level']
     df.drop(columns=['sleep_level'], inplace=True)
 
@@ -255,7 +261,7 @@ if __name__ == "__main__":
     for model_name, model in models.items():
         # Modell trainieren
         print(f"Training {model_name}")
-        model.fit(df, target_vals)
+        model.fit(df.values, target_vals.values)
         print(f"Predicting with {model_name}")
         # Vorhersagen treffen
         y_pred = model.predict(test_df)
@@ -279,6 +285,8 @@ if __name__ == "__main__":
     print(results_df)
 
     enum_labels = {1: "Awake", 2: "Light sleep", 3: "Deep sleep", 4: "REM"}
+
+
 
 for result in results:
     plt.figure(figsize=(6, 4))

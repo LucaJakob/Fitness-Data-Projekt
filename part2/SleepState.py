@@ -29,19 +29,6 @@ class SleepState:
                 continue
             SleepState.__parse_df(all_df, day, "test")
 
-        # Debugging: Anzeige der geladenen Daten
-        print("Trainingsdaten (Limits):")
-        for day, (start, stop) in SleepState.__train_limits.items():
-            readable_start = pd.to_datetime(start, unit='s').strftime('%Y-%m-%d %H:%M:%S')
-            readable_end = pd.to_datetime(stop, unit='s').strftime('%Y-%m-%d %H:%M:%S')
-            print(f"Tag {day}: Schlafbeginn = {readable_start}, Schlafende = {readable_end}")
-
-        print("Testdaten (Limits):")
-        for day, (start, stop) in SleepState.__test_limits.items():
-            readable_start = pd.to_datetime(start, unit='s').strftime('%Y-%m-%d %H:%M:%S')
-            readable_end = pd.to_datetime(stop, unit='s').strftime('%Y-%m-%d %H:%M:%S')
-            print(f"Tag {day}: Schlafbeginn = {readable_start}, Schlafende = {readable_end}")
-
         SleepState.__loaded = True
 
     @staticmethod
