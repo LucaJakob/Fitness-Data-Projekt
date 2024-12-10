@@ -7,6 +7,9 @@ import sklearn.metrics as skmetrics
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from hmmlearn import hmm
+import warnings
+warnings.filterwarnings("ignore")
 
 def load_hrv(train_df: pd.DataFrame, test_df: pd.DataFrame, time_col: str):
     output = train_df
@@ -205,6 +208,25 @@ def map_index(df: pd.DataFrame):
     df['minute'] = dates.minute
     df['second'] = dates.second
 
+def evaluate_model(model_name: str, model):
+    y_pred = model.predict(test_df)
+        # Metriken berechnen
+    accuracy = skmetrics.accuracy_score(test_vals, y_pred)
+    precision = skmetrics.precision_score(test_vals, y_pred, average='weighted')
+    recall = skmetrics.recall_score(test_vals, y_pred, average='weighted')
+    f1 = skmetrics.f1_score(test_vals, y_pred, average='weighted')
+    conf_matrix = skmetrics.confusion_matrix(test_vals, y_pred)
+    
+    # Ergebnisse speichern
+    return {
+        'Model': model_name,
+        'Accuracy': accuracy,
+        'Precision': precision,
+        'Recall': recall,
+        'F1 Score': f1,
+        'Confusion Matrix': conf_matrix
+    }
+
 # enum:
 # Awake: 1
 # Light sleep: 2
@@ -238,9 +260,9 @@ if __name__ == "__main__":
     #plot_sleep_phases(df, sleep_level_col="sleep_level")
     #plot_sleep_phases_one_day(test_df, sleep_level_col="sleep_level", day="2004-09-29")
 
-    # TODO: Figure out if timestamps should be variable in rows or index is fine
     map_index(df)
     map_index(test_df)
+
     target_vals = df['sleep_level']
     df.drop(columns=['sleep_level'], inplace=True)
 
@@ -263,49 +285,35 @@ if __name__ == "__main__":
         print(f"Training {model_name}")
         model.fit(df.values, target_vals.values)
         print(f"Predicting with {model_name}")
-        # Vorhersagen treffen
-        y_pred = model.predict(test_df)
-        
-        # Metriken berechnen
-        accuracy = skmetrics.accuracy_score(test_vals, y_pred)
-        f1 = skmetrics.f1_score(test_vals, y_pred, average='weighted')
-        conf_matrix = skmetrics.confusion_matrix(test_vals, y_pred)
-        
-        # Ergebnisse speichern
-        results.append({
-            'Model': model_name,
-            'Accuracy': accuracy,
-            'F1 Score': f1,
-            'Confusion Matrix': conf_matrix
-        })
+        results.append(evaluate_model(model_name, model))
 
-    print("Eindeutige Werte in den Vorhersagen:", np.unique(y_pred))
+    print("Training Multinomial Hidden Markov")
+    model_hmm = hmm.MultinomialHMM(n_components=4, n_iter=100, random_state=42)
+    model.startprob_ = np.array([0, 1, 0, 0])
+    model.transmat_ = np.array([[0.5, 0.3, 0.1, 0.1], [0.1, 0.7, 0.1, 0.1], [0.05, 0.2, 0.6, 0.15], [ 0.05, 0.1, 0.1, 0.75]])
+    model.emissionprob_ = np.array([[0.5, 0.3, 0.1, 0.1], [0.1, 0.7, 0.1, 0.1], [0.05, 0.2, 0.6, 0.15], [ 0.05, 0.1, 0.1, 0.75]])
 
-    results_df = pd.DataFrame(results).drop(columns=['Confusion Matrix'])
-    print(results_df)
+    model.fit(df.fillna(0).values, target_vals.values)
+    print("Predicting with Multinomial Hidden Markov")
+    results.append(evaluate_model("Multinomial Hidden Markov", model))
+
+    print(pd.DataFrame(results).drop(columns=['Confusion Matrix']))
 
     enum_labels = {1: "Awake", 2: "Light sleep", 3: "Deep sleep", 4: "REM"}
 
 
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2, figsize=(15,15))
+for i, result in enumerate(results):
+    ax = [ax1, ax2, ax3, ax4][i]
 
-for result in results:
-    plt.figure(figsize=(6, 4))
     conf_matrix = result['Confusion Matrix']
 
     # Mögliche Klassen aus dem Enum definieren
-    enum_classes = [1, 2, 3, 4]  # Werte aus dem Enum
-    tick_labels = [enum_labels.get(i, str(i)) for i in enum_classes]
+    tick_labels = [enum_labels[i] for i in range(1, 5)]
 
     # Heatmap erstellen
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=tick_labels, yticklabels=tick_labels)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=tick_labels, yticklabels=tick_labels, ax=ax)
     plt.title(f"Confusion Matrix: {result['Model']}")
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
-    plt.show()
-
-# Time series google
-# Random Forest
-# ANN
-# Decision Tree Classifier
-# Logistic Regression
-# Naive Bayes
+plt.show()
